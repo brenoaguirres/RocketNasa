@@ -34,17 +34,6 @@ public class RocketController : MonoBehaviour
     
     #endregion
 
-    #region State Machine Variables
-
-    public RocketStateMachine StateMachine {get; set;}
-    public RocketIdleState IdleState {get; set;}
-    public RocketThrustingState ThrustingState {get; set;}
-    public RocketCoastingFlightState CoastingFlightState {get; set;}
-    public RocketDelayChargeState DelayChargeState {get; set;}
-    public RocketParachuteState ParachuteState {get; set;}
-
-    #endregion
-
     void Awake()
     {
         rocketFuel = GetComponent<RocketFuel>();
@@ -52,25 +41,10 @@ public class RocketController : MonoBehaviour
         rocketRotation = GetComponent<RocketRotation>();
         rb = GetComponent<Rigidbody>();
         parachute = GetComponent<Parachute>();
-
-        // Set-up state machine
-        StateMachine = new RocketStateMachine();
-        IdleState = new RocketIdleState(this, StateMachine);
-        ThrustingState = new RocketThrustingState(this, StateMachine);
-        CoastingFlightState = new RocketCoastingFlightState(this, StateMachine);
-        DelayChargeState = new RocketDelayChargeState(this, StateMachine);
-        ParachuteState = new RocketParachuteState(this, StateMachine);
-
-    }
-
-    void Update() {
-        StateMachine.CurrentRocketState.FrameUpdate();
     }
     
     void FixedUpdate()
     {
-        StateMachine.CurrentRocketState.PhysicsUpdate();
-
         VerifyMaxHeight();
 
         if (hasFuel && enginesActivated) {
@@ -106,24 +80,4 @@ public class RocketController : MonoBehaviour
         rb.drag = parachuteDrag;
         parachute.Spawn();
     }
-
-    #region Particles
-
-    // boilerplate
-
-    #endregion
-
-    #region Sounds
-
-    public void SoundTriggerEvent(SoundTriggerType triggerType) {
-        StateMachine.CurrentRocketState.SoundTriggerEvent(triggerType);
-    }
-
-    public enum SoundTriggerType
-    {
-        RocketThrust,
-        ParachuteOpening
-    }
-
-    #endregion
 }
