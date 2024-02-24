@@ -35,6 +35,7 @@ public class RocketController : MonoBehaviour
     private Rigidbody rb;
     private Parachute parachute;
     private RocketVFXHandler vFXHandler;
+    private RocketAudioController audioController;
     
     #endregion
 
@@ -46,6 +47,7 @@ public class RocketController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         parachute = GetComponent<Parachute>();
         vFXHandler = GetComponent<RocketVFXHandler>();
+        audioController = GetComponent<RocketAudioController>();
     }
     
     void FixedUpdate()
@@ -53,17 +55,23 @@ public class RocketController : MonoBehaviour
         IsGrounded();
         SaveMaxHeight();
         MoveRocket();
+        //DelayCharge();
         RotateRocket();
     }
 
 
     #region Methods
 
+    public void ActivateEngine() {
+        enginesActivated = true;
+    }
+
     public void MoveRocket() {
         if (hasFuel && enginesActivated) {
             hasFuel = rocketFuel.SpendFuel();
             rocketMovement.Thrust(rb);
             CallVFX();
+            CallSFX();
         }
         else if (!hasFuel && !enginesActivated && transform.position.y <= 
                     parachuteSpawnHeight && canSpawnCapsule) {
@@ -84,10 +92,24 @@ public class RocketController : MonoBehaviour
         }
     }
 
+    public void DelayCharge() {
+        if (transform.rotation.eulerAngles.x >= 340f && transform.rotation.eulerAngles.x >= 345f && !isGrounded) {
+            rocketFuel.Refuel();
+        }
+
+        if (hasFuel && !enginesActivated && !isGrounded)
+            CallVFX(1, true);
+        else
+            CallVFX(1, false);
+
+        //hasFuel = rocketFuel.SpendFuel();
+    }
+
     public void DeactivateEngine() {
         hasFuel = false;
         enginesActivated = false;
         CallVFX(0, false);
+        CallSFX(0, false, false);
     }
 
     public void SaveMaxHeight() {
@@ -115,6 +137,7 @@ public class RocketController : MonoBehaviour
     public void SpawnParachute() {
         canSpawnCapsule = false;
         rb.drag = parachuteDrag;
+        CallSFX(1, true, false);
         parachute.Spawn();
     }
 
@@ -133,6 +156,14 @@ public class RocketController : MonoBehaviour
 
     public void CallVFX(int index, bool toggle) {
         vFXHandler.ToggleVFX(index, toggle);
+    }
+
+    public void CallSFX() {
+        audioController.PlaySFX(0, true);
+    }
+
+    public void CallSFX(int index, bool toggle, bool loop) {
+        audioController.ToggleSFX(index, loop, toggle);
     }
 
     #endregion

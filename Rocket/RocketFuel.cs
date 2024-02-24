@@ -7,6 +7,8 @@ public class RocketFuel : MonoBehaviour
     [SerializeField] private float maxFuel = 500f;
     [SerializeField] private float currentFuel;
     [SerializeField] private float fuelDepletionRate = 100f;
+    [SerializeField] private float delayFuel = 50f;
+    private bool extraTank = true;
 
     void Awake()
     {
@@ -22,5 +24,12 @@ public class RocketFuel : MonoBehaviour
         float newFuel = Mathf.Lerp(currentFuel, currentFuel - fuelDepletionRate, Time.deltaTime);
         currentFuel = Mathf.Max(newFuel, 0f);
         return true;
+    }
+
+    public void Refuel() {
+        if (extraTank) {
+            currentFuel = delayFuel;
+            extraTank = false;
+        }
     }
 }
