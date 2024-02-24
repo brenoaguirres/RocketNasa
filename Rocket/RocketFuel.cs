@@ -14,13 +14,13 @@ public class RocketFuel : MonoBehaviour
     }
 
 
-    public void SpendFuel() {
+    public bool SpendFuel() {
         if (currentFuel <= 0) {
-            BroadcastMessage("FuelDepleted");
-            return;
+            return false;
         }
 
         float newFuel = Mathf.Lerp(currentFuel, currentFuel - fuelDepletionRate, Time.deltaTime);
         currentFuel = Mathf.Max(newFuel, 0f);
+        return true;
     }
 }

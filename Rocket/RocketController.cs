@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class RocketController : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class RocketController : MonoBehaviour
 
     private const float minHeightAirborne = 1f;
     private const float parachuteSpawnHeight = 20f;
-    private const float rotationMinHeight = 1.5f;
+    private const float groundCheckDistance = 0.1f;
 
     #endregion
 
@@ -21,6 +22,8 @@ public class RocketController : MonoBehaviour
     [SerializeField] private float maxHeightReached = 0f;
     private bool canSpawnCapsule = true;
     [SerializeField] private float parachuteDrag = 5f;
+    [SerializeField] private LayerMask groundMask;
+    private bool isGrounded = true;
 
     #endregion
  
@@ -31,6 +34,7 @@ public class RocketController : MonoBehaviour
     private RocketRotation rocketRotation;
     private Rigidbody rb;
     private Parachute parachute;
+    private RocketVFXHandler vFXHandler;
     
     #endregion
 
@@ -41,31 +45,52 @@ public class RocketController : MonoBehaviour
         rocketRotation = GetComponent<RocketRotation>();
         rb = GetComponent<Rigidbody>();
         parachute = GetComponent<Parachute>();
+        vFXHandler = GetComponent<RocketVFXHandler>();
     }
     
     void FixedUpdate()
     {
-        VerifyMaxHeight();
+        IsGrounded();
+        SaveMaxHeight();
+        MoveRocket();
+        RotateRocket();
+    }
 
+
+    #region Methods
+
+    public void MoveRocket() {
         if (hasFuel && enginesActivated) {
-            rocketFuel.SpendFuel();
+            hasFuel = rocketFuel.SpendFuel();
             rocketMovement.Thrust(rb);
+            CallVFX();
         }
         else if (!hasFuel && !enginesActivated && transform.position.y <= 
                     parachuteSpawnHeight && canSpawnCapsule) {
             SpawnParachute();
         }
-
-        if (transform.position.y >= rotationMinHeight)
-            rocketRotation.RotateTowards(rb);
+        
+        if (!hasFuel && enginesActivated) {
+            DeactivateEngine();
+        }
     }
 
-    public void FuelDepleted() {
+    public void RotateRocket() {
+        if (!isGrounded && canSpawnCapsule)
+            rocketRotation.RotateTowards(rb);
+        
+        if (!canSpawnCapsule) {
+            rocketRotation.ParachuteRotation(rb);
+        }
+    }
+
+    public void DeactivateEngine() {
         hasFuel = false;
         enginesActivated = false;
+        CallVFX(0, false);
     }
 
-    public void VerifyMaxHeight() {
+    public void SaveMaxHeight() {
         if (transform.position.y > minHeightAirborne)
             isAirborne = true;
         else
@@ -75,9 +100,40 @@ public class RocketController : MonoBehaviour
             maxHeightReached = transform.position.y;
     }
 
+    public bool IsGrounded() {
+        Ray ray = new Ray(transform.position, Vector3.down);
+        if (Physics.Raycast(ray, out RaycastHit hit, groundCheckDistance, groundMask)) {
+            isGrounded = true;
+            return true;
+        }
+        else {
+            isGrounded = false;
+            return false;
+        }
+    }
+
     public void SpawnParachute() {
         canSpawnCapsule = false;
         rb.drag = parachuteDrag;
         parachute.Spawn();
     }
+
+    public void CallVFX() {
+        // Starting Effects
+        if (isGrounded) {
+            vFXHandler.ToggleVFX(0, true);
+            vFXHandler.ToggleVFX(1, true);
+            vFXHandler.ToggleVFX(2, true);
+        }
+        else {
+            vFXHandler.ToggleVFX(1, false);
+            vFXHandler.ToggleVFX(2, false);
+        }
+    }
+
+    public void CallVFX(int index, bool toggle) {
+        vFXHandler.ToggleVFX(index, toggle);
+    }
+
+    #endregion
 }
